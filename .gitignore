@@ -1,4 +1,5 @@
 avr-prototype/obj/*
+*.o
 *.bin
 *.eep
 *.elf
