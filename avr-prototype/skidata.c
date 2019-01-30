@@ -50,8 +50,38 @@ USB_ClassInfo_HID_Device_t Mouse_HID_Interface =
 uint8_t enc_prev[2] = {0, 0};
 uint8_t enc_cur[2] = {0, 0};
 
-int32_t xpos = 0;
-int32_t ypos = 0;
+int16_t xpos = 0;
+int16_t ypos = 0;
+
+uint8_t buttonstat = 0x00;
+
+void handle_xenc_int() {
+    enc_cur[0] = (PIND & 0x0C) >> 2;
+    xpos += dirtbl[enc_prev[0] << 2 | enc_cur[0]];
+    enc_prev[0] = enc_cur[0];
+}
+
+void handle_yenc_int() {
+    enc_cur[1] = (PIND & 0x03) >> 0;
+    ypos += dirtbl[enc_prev[1] << 2 | enc_cur[1]];
+    enc_prev[1] = enc_cur[1];
+}
+
+ISR(INT0_vect) {
+    handle_yenc_int();
+}
+
+ISR(INT1_vect) {
+    handle_yenc_int();
+}
+
+ISR(INT2_vect) {
+    handle_xenc_int();
+}
+
+ISR(INT3_vect) {
+    handle_xenc_int();
+}
 
 /** Main program entry point. This routine contains the overall program flow, including initial
  *  setup of all components and the main program loop.
@@ -62,44 +92,11 @@ int main(void)
 
     GlobalInterruptEnable();
 
-    uint8_t buf;
     for (;;)
-    {
-        HID_Device_USBTask(&Mouse_HID_Interface);
-        USB_USBTask();
-
-        buf = (PINF & 0xF0) >> 4;
-        enc_cur[1] = buf & 0x03;
-        enc_cur[0] = (buf & 0x0C) >> 2;
-
-        for (int i = 0; i < 2; i++) {
-            if (enc_prev[i] != enc_cur[i]) {
-                char dir = i == 1 ? 'x' : 'y';
-
-                switch (postbl[enc_cur[i]] - postbl[enc_prev[i]]) {
-                case 1:
-                case -3:
-                    if (dir == 'x') {
-                        xpos ++;
-                    } else {
-                        ypos ++;
-                    }
-                    break;
-                case -1:
-                case 3:
-                    if (dir == 'x') {
-                        xpos --;
-                    } else {
-                        ypos --;
-                    }
-                    break;
-                }
-
-                enc_prev[i] = enc_cur[i];
-            }
+        {
+            HID_Device_USBTask(&Mouse_HID_Interface);
+            USB_USBTask();
         }
-
-    }
 }
 
 /** Configures the board hardware and chip peripherals for the demo's functionality. */
@@ -115,8 +112,32 @@ void SetupHardware()
     /* Hardware Initialization */
     USB_Init();
 
-    DDRF &= 0x0F;
-    PORTF &= 0x0F;
+    DDRD &= 0xF0;
+    PORTD &= 0x00;
+
+    DDRB = 0xE1;
+    PORTB = 0xE0;
+
+    DDRF = 0x00;
+    PORTF = 0x00;
+
+    EICRA = 0x55;
+    EIMSK = 0x0F;
+
+    //PCICR = 0x01;
+    //PCMSK0 = 0x1E;
+
+    // Check any button is pressed or not
+
+    //uint8_t tmp = 0;
+    //for(;;) {
+    //uint8_t buttonstat = (PINF);
+
+    //if (buttonstat != tmp) {
+    //    PORTB ^= 0x01;
+    //    tmp = buttonstat;
+    //}
+    //}
 }
 
 /** Event handler for the library USB Connection event. */
@@ -172,8 +193,11 @@ bool CALLBACK_HID_Device_CreateHIDReport(USB_ClassInfo_HID_Device_t* const HIDIn
 
     USB_MouseReport_Data_t* MouseReport = (USB_MouseReport_Data_t*)ReportData;
 
-    MouseReport->Y = ypos;
-    MouseReport->X = -xpos;
+    MouseReport->Y = -ypos;
+    MouseReport->X = xpos;
+    MouseReport->Button = ((~PINF & 0xF0) >> 4);
+
+    PORTB = (~PINF & 0xF0) >> 4;
 
     xpos = 0;
     ypos = 0;

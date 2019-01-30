@@ -58,11 +58,26 @@
 		                                          const uint16_t ReportSize);
 
   /* Constants */
-    int8_t postbl[] =
-        {
-            0, // 2'b00
-            1, // 2'b01
-            3, // 2'b10
-            2, // 2'b11
-        };
+
+#define SKIDATA_ZERO 0
+#define SKIDATA_SPEED 5
+const int8_t dirtbl[] =
+{
+        SKIDATA_ZERO,   // 2'b0000
+        -SKIDATA_SPEED, // 2'b0001
+        SKIDATA_SPEED,  // 2'b0010
+        SKIDATA_ZERO,   // 2'b0011
+        SKIDATA_SPEED,  // 2'b0100
+        SKIDATA_ZERO,   // 2'b0101
+        SKIDATA_ZERO,   // 2'b0110
+        -SKIDATA_SPEED, // 2'b0111
+        -SKIDATA_SPEED, // 2'b1000
+        SKIDATA_ZERO,   // 2'b1001
+        SKIDATA_ZERO,   // 2'b1010
+        SKIDATA_SPEED,  // 2'b1011
+        SKIDATA_ZERO,   // 2'b1100
+        SKIDATA_SPEED,  // 2'b1101
+        -SKIDATA_SPEED, // 2'b1110
+        SKIDATA_ZERO,   // 2'b1111
+};
 #endif
