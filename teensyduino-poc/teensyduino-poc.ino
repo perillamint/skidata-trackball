@@ -49,7 +49,7 @@ void setup() {
   shifted = false;
   digitalWrite(led_pin, shifted);
 
-  tone(buzzer_pin, 1000, 300);
+  tone(buzzer_pin, 3600, 300);
 }
 
 void loop() {
